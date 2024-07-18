@@ -2,14 +2,20 @@ import hashlib
 import json
 import os
 import os.path
-import pprint
 import sys
 from datetime import datetime
-from simple_chalk import green, yellow
+import pprint
+from simple_chalk import chalk, green, red, yellow
 
 os.system('color')  # necessary to print color text to the windows terminal - https://stackoverflow.com/a/293633
 
 EXCLUDE_LIST = ['.git', '.venv', '.idea', 'Include', 'Lib', 'Scripts', 'out.json']
+
+DATA_DIR = ".fingerprint-data"
+
+# Create data directory if it doesn't exist already
+if (not os.path.isdir(DATA_DIR)):
+    os.makedirs(DATA_DIR)
 
 def calculate_md5(file_path):
     """Calculate the MD5 checksum of a file."""
@@ -74,7 +80,7 @@ def read_md5_from_json(filename):
         print(f"Couldn't find {filename}... ignoring")
     return old_dict
 
-def save_md5_to_json(md5_dict, json_file="out.json"):
+def save_md5_to_json(md5_dict, json_file="out"):
     """Save the MD5 dictionary to a JSON file."""
     with open(json_file, 'w') as f:
         json.dump(md5_dict, f, indent=4)
@@ -87,24 +93,45 @@ def exclude_dir(directory, root):
             return True
     return False
 
-def main(directory=".", json_file="out.json"):
+# def main(directory, json_file="out.json"):
+
+def main(directory=".", json_file="out"):
+    global DATA_DIR
     # directory = input("Enter the directory path to calculate MD5 sums: ")
     # json_file = input("Enter the output JSON file path: ")
+    json_filename = get_filename_json_root(json_file)
     md5_dict = get_files_md5(directory)
-    print(green(f"MD5 checksums saved to {json_file}"))
-    if os.path.isfile(json_file):
-        old_dict = read_md5_from_json(json_file)
+    print(green(f"MD5 checksums saved to {json_filename}"))
+    if os.path.isfile(json_filename):
+        old_dict = read_md5_from_json(json_filename)
+
         changes = compare_data(old_dict, md5_dict)
         changes['meta'] = {}
         changes['meta']['old'] = old_dict['meta']['updated_on']['a']
         changes['meta']['new'] = md5_dict['meta']['updated_on']['a']
+        json_base = get_filename_root(json_file + "-" + str(md5_dict['meta']['updated_on']['b']))
+        # No changes
         if (len(changes['new']) + len(changes['deleted']) + len(changes['changed']) == 0):
             print('No changes')
-        else:
+        else:  # Capture the changes
+            # Save diffs to snapshot and "-latest" JSON files
+            with open(get_filename_root(json_file + "-latest-diff.json"), 'w') as f:
+                json.dump(changes, f)
+            with open(json_base + "-diff.json", "w") as f:
+                json.dump(changes, f)
             pprint.pp(changes)
+        # Save full data to base JSON file - whether there were changes or not
+        save_md5_to_json(md5_dict, get_filename_root(json_file) + ".json")
     else:
         print("Old file doesn't exist, so skipping comparison.")
-    save_md5_to_json(md5_dict, json_file)
+
+def get_filename_root(filename_root="data"):
+    global DATA_DIR
+    return (os.path.join(DATA_DIR, filename_root))
+
+def get_filename_json_root(filename_root="data"):
+    global DATA_DIR
+    return (get_filename_root(filename_root) + ".json")
 
 if __name__ == "__main__":
     main(sys.argv[1], sys.argv[2])
