@@ -6,8 +6,6 @@ import sys
 from datetime import datetime
 import pprint
 from simple_chalk import chalk, green, red, yellow
-import winsound
-import time
 
 os.system('color')  # necessary to print color text to the windows terminal - https://stackoverflow.com/a/293633
 
@@ -95,6 +93,8 @@ def exclude_dir(directory, root):
             return True
     return False
 
+# def main(directory, json_file="out.json"):
+
 def main(directory=".", json_file="out"):
     global DATA_DIR
     # directory = input("Enter the directory path to calculate MD5 sums: ")
@@ -104,6 +104,7 @@ def main(directory=".", json_file="out"):
     print(green(f"MD5 checksums saved to {json_filename}"))
     if os.path.isfile(json_filename):
         old_dict = read_md5_from_json(json_filename)
+
         changes = compare_data(old_dict, md5_dict)
         changes['meta'] = {}
         changes['meta']['old'] = old_dict['meta']['updated_on']['a']
@@ -119,12 +120,10 @@ def main(directory=".", json_file="out"):
             with open(json_base + "-diff.json", "w") as f:
                 json.dump(changes, f)
             pprint.pp(changes)
-            winsound.Beep(2500, 100)
+        # Save full data to base JSON file - whether there were changes or not
+        save_md5_to_json(md5_dict, get_filename_root(json_file) + ".json")
     else:
         print("Old file doesn't exist, so skipping comparison.")
-
-    # Save full data to base JSON file - whether there were changes or not
-    save_md5_to_json(md5_dict, get_filename_root(json_file) + ".json")
 
 def get_filename_root(filename_root="data"):
     global DATA_DIR
@@ -135,12 +134,4 @@ def get_filename_json_root(filename_root="data"):
     return (get_filename_root(filename_root) + ".json")
 
 if __name__ == "__main__":
-    dir_name = sys.argv[1]
-    json_name = sys.argv[2]
-    while True:
-        main(dir_name, json_name)  # (sys.argv[1], sys.argv[2])
-        for remaining in range(600, 0, -1):
-            sys.stdout.write("\r")
-            sys.stdout.write("{:2d} seconds remaining.".format(remaining))
-            sys.stdout.flush()
-            time.sleep(1)
+    main(sys.argv[1], sys.argv[2])
