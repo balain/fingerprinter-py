@@ -6,10 +6,14 @@ import sys
 from datetime import datetime
 import pprint
 from simple_chalk import chalk, green, red, yellow
+import time
+
+start_time = time.time()
 
 os.system('color')  # necessary to print color text to the windows terminal - https://stackoverflow.com/a/293633
 
-EXCLUDE_LIST = ['.git', '.venv', '.idea', 'Include', 'Lib', 'Scripts', 'out.json']
+EXCLUDE_LIST = []
+# EXCLUDE_LIST = ['.fingerprint-data', '.git', '.idea', '.venv', 'bin', 'Include', 'lib', 'Lib', 'Scripts', 'out.json']
 
 DATA_DIR = ".fingerprint-data"
 
@@ -120,10 +124,11 @@ def main(directory=".", json_file="out"):
             with open(json_base + "-diff.json", "w") as f:
                 json.dump(changes, f)
             pprint.pp(changes)
-        # Save full data to base JSON file - whether there were changes or not
-        save_md5_to_json(md5_dict, get_filename_root(json_file) + ".json")
     else:
         print("Old file doesn't exist, so skipping comparison.")
+
+    # Save full data to base JSON file - whether there were changes or not
+    save_md5_to_json(md5_dict, get_filename_root(json_file) + ".json")
 
 def get_filename_root(filename_root="data"):
     global DATA_DIR
@@ -135,3 +140,4 @@ def get_filename_json_root(filename_root="data"):
 
 if __name__ == "__main__":
     main(sys.argv[1], sys.argv[2])
+    print('Execution time: ', time.time() - start_time, ' seconds')
