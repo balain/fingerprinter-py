@@ -5,3 +5,5 @@
 .venv/
 Lib/
 Scripts/
+bin/
+/pyvenv.cfg
