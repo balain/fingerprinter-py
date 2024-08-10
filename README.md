@@ -87,10 +87,14 @@ MD5 checksums saved to junk/junk.json
  'meta': {'old': '2024-08-09T21:48:48', 'new': '2024-08-09T21:50:01'}}
 ```
 
+## Features
+
+## Implemented
+- [x] Implement alternative (optional) sqlite storage
+
 ## TODOs
 
 - [ ] Generate sample timings
-- [ ] Implement alternative (optional) sqlite storage
 
 ## Other Similar or Related Projects
 
