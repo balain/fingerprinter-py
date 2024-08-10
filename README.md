@@ -1,6 +1,6 @@
-# Project Title
+# Fingerprinter (Python)
 
-Capture fingerprints (md5) of files in specified folder, recursively. 
+Take fingerprints (md5) of files in specified folder, recursively. 
 
 Optionally:
 - Compare with previous snapshots and report on any changes (i.e. added, changed, or deleted files).
@@ -65,3 +65,8 @@ $ python fingerprinter.py -p .. -x git -o parent.json -d output-files
 ### TODOs
 
 - Implement alternative (optional) sqlite storage
+
+### Other Projects
+
+- [fingerprinter](https://github.com/balain/fingerprinter): Original Typescript version. No longer maintained.
+- [fingerprinter-rs](https://github.com/balain/fingerprinter-rs): Rust port (uses rayon for multithreading).
