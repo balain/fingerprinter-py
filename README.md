@@ -38,19 +38,25 @@ $ git clone https://github.com/balain/fingerprinter-py.git
 Using argparse
 
 ```bash
+❯ python fingerprinter.py --help
+usage: fingerprinter.py [-h] -p PATH [-o OUTPUT] [-d DATA_DIR] [-t] [-x EXCLUDE] [-w] [-wp WATCH_PERIOD] [-s SQLITE_FILENAME] [-v]
+
+options:
   -h, --help            show this help message and exit
   -p PATH, --path PATH  Path to scan (default: ".")
   -o OUTPUT, --output OUTPUT
-                        Output json file (default: "output.json")
+                        Output json file (not including extension; default: "output")
   -d DATA_DIR, --data-dir DATA_DIR
                         Data directory (where the json file is saved; default: ".fingerprint-data")
+  -t, --timing          Capture execution time
   -x EXCLUDE, --exclude EXCLUDE
-                        Folders to exclude (default: ['.git', '.venv', '.idea', 'bin', 'Include', 'include', 'Lib', 'lib', 'Scripts', 'scripts', 'out.json'])
+                        Folders to exclude (default: ['.git', '.venv', '.idea', 'bin', 'Include', 'include', 'Lib', 'lib', 'Scripts', 'scripts', 'output.json'])
   -w, --watch           Watch for changes and update output json
-  -t WATCH_PERIOD, --watch-period WATCH_PERIOD
+  -wp WATCH_PERIOD, --watch-period WATCH_PERIOD
                         How many seconds to wait between scans (default 600)
-  -v, --verbose         Verbose output
-```
+  -s SQLITE_FILENAME, --sqlite-filename SQLITE_FILENAME
+                        Filename to save output to sqlite database (default: unset)
+  -v, --verbose         Verbose output```
 
 ## Usage
 
