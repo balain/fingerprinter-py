@@ -6,6 +6,16 @@ Optionally:
 - Compare with previous snapshots and report on any changes (i.e. added, changed, or deleted files).
 - Run a continuous watch, cycling every 600sec (configurable).
 
+## Quick Start
+
+Clone the repo and run the file using all defaults. The current folder will be scanned and the output (json) file (`output.json`) will be saved in the `.fingerprint-data` folder:
+
+```bash
+$ git clone https://github.com/balain/fingerprinter-py.git
+$ python fingerprinter.py
+$ cat .fingerprint-data/output.json
+```
+
 ## Getting Started
 
 ### Prerequisites
@@ -62,11 +72,26 @@ Scan the current folder, exclude .git folder(s), output to parent.json in the ou
 $ python fingerprinter.py -p .. -x git -o parent.json -d output-files
 ```
 
-### TODOs
+## Sample Output
+
+Run it again, saving it to `./junk/junk.json`; Exclude `gi`, `gii`, and `git` files/folders.
+
+The output shows two new files, no deleted files, and two changed files, including the python source file. It also shows the prior and latest timestamps (in the `meta` object).
+
+```bash
+❯ python fingerprinter.py -p . -o junk -d junk -x gi -x gii -x git
+MD5 checksums saved to junk/junk.json
+{'new': ['junk/junk-latest-diff.json', 'junk/junk-1723254528-diff.json'],
+ 'deleted': [],
+ 'changed': ['fingerprinter.py', 'junk/junk.json'],
+ 'meta': {'old': '2024-08-09T21:48:48', 'new': '2024-08-09T21:50:01'}}
+```
+
+## TODOs
 
 - Implement alternative (optional) sqlite storage
 
-### Other Projects
+## Other Similar or Related Projects
 
 - [fingerprinter](https://github.com/balain/fingerprinter): Original Typescript version. No longer maintained.
 - [fingerprinter-rs](https://github.com/balain/fingerprinter-rs): Rust port (uses rayon for multithreading).
