@@ -19,7 +19,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-p", "--path", help='Path to scan (default: "%(default)s")', default=".", required=True)
 parser.add_argument("-o", "--output", help='Output json file (not including extension; default: "%(default)s")', default="output" )
 parser.add_argument("-d", "--data-dir", help='Data directory (where the json file is saved; default: "%(default)s")', default=".fingerprint-data")
-parser.add_argument("-t", "--timing", help='Capture execution time', action='store_false', default=False)
+parser.add_argument("-t", "--timing", help='Capture execution time', action='store_true', default=False)
 parser.add_argument("-x", "--exclude", help='Folders to exclude (default: %(default)s)', action='append', default=EXCLUDE_LIST_DEFAULT)
 parser.add_argument("-w", "--watch", help="Watch for changes and update output json", action='store_false', default=False)
 parser.add_argument("-wp", "--watch-period", default=600, help='How many seconds to wait between scans (default %(default)i)', type=int)
@@ -30,6 +30,7 @@ args = parser.parse_args()
 
 # Set up timing, if requested
 if args.timing:
+    print(yellow('Capturing execution time'))
     import time
     start_time = time.time()
 
@@ -69,8 +70,11 @@ def calculate_md5(file_path):
             for chunk in iter(lambda: f.read(4096), b""):
                 hasher.update(chunk)
     except PermissionError as pe:
-        # print(colored(f"ERR: Permission error caught with {file_path}... ignoring", 'red'))
+        # Skip the file if encountering some permission error (e.g. with OneDrive files)
         print(yellow.dim(f"ERR: Permission error caught with {file_path}... ignoring"))
+    except FileNotFoundError as fe:
+        # Skip the file if it doesn't exist...
+        print(red.dim(f"ERR: File not found error caught with {file_path}... ignoring"))
     return hasher.hexdigest()
 
 def get_files_md5(directory):
@@ -205,4 +209,4 @@ if __name__ == "__main__":
         main(dir_name, json_name)
         # Print execution time, if requested
         if args.timing:
-            print(yellow('Execution time: ', time.time() - start_time, ' seconds'))
+            print(yellow(f'Execution time: {time.time() - start_time} seconds'))
