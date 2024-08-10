@@ -93,5 +93,5 @@ MD5 checksums saved to junk/junk.json
 
 ## Other Similar or Related Projects
 
-- [fingerprinter](https://github.com/balain/fingerprinter): Original Typescript version. No longer maintained.
 - [fingerprinter-rs](https://github.com/balain/fingerprinter-rs): Rust port (uses rayon for multithreading).
+- [fingerprinter](https://github.com/balain/fingerprinter): Original Typescript version. No longer maintained.
