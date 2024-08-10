@@ -6,14 +6,38 @@ import sys
 from datetime import datetime
 import pprint
 from simple_chalk import chalk, green, red, yellow
-import winsound
+#import winsound
 import time
+import platform
 
-os.system('color')  # necessary to print color text to the windows terminal - https://stackoverflow.com/a/293633
+import argparse
 
-EXCLUDE_LIST = ['.git', '.venv', '.idea', 'Include', 'Lib', 'Scripts', 'out.json']
+EXCLUDE_LIST_DEFAULT = ['.git', '.venv', '.idea', 'bin', 'Include', 'include', 'Lib', 'lib', 'Scripts', 'scripts', 'out.json']
 
-DATA_DIR = ".fingerprint-data"
+# Parse command line arguments
+parser = argparse.ArgumentParser()
+parser.add_argument("-p", "--path", default=".", help='Path to scan (default: "%(default)s")', required=True)
+parser.add_argument("-o", "--output", default="output.json", help='Output json file (default: "%(default)s")')
+parser.add_argument("-d", "--data-dir", default=".fingerprint-data", help='Data directory (where the json file is saved; default: "%(default)s")')
+parser.add_argument("-x", "--exclude", help='Folders to exclude (default: %(default)s)', action='append', default=EXCLUDE_LIST_DEFAULT)
+parser.add_argument("-w", "--watch", action='store_false', default=False, help="Watch for changes and update output json")
+parser.add_argument("-t", "--watch-period", default=600, help='How many seconds to wait between scans (default %(default)i)', type=int)
+parser.add_argument("-v", "--verbose", action='store_true', default=False, help="Verbose output")
+
+args = parser.parse_args()
+
+EXCLUDE_LIST = args.exclude
+
+# print(f"args: {args}")
+# print("git" in args.exclude)
+# exit(100)
+
+# Set up console colors
+if platform.system() == 'Windows':
+    os.system('color')  # necessary to print color text to the windows terminal - https://stackoverflow.com/a/293633
+
+# Set up global variables
+DATA_DIR = args.data_dir
 
 # Create data directory if it doesn't exist already
 if (not os.path.isdir(DATA_DIR)):
@@ -95,7 +119,7 @@ def exclude_dir(directory, root):
             return True
     return False
 
-def main(directory=".", json_file="out"):
+def main(directory, json_file):
     global DATA_DIR
     # directory = input("Enter the directory path to calculate MD5 sums: ")
     # json_file = input("Enter the output JSON file path: ")
@@ -119,7 +143,7 @@ def main(directory=".", json_file="out"):
             with open(json_base + "-diff.json", "w") as f:
                 json.dump(changes, f)
             pprint.pp(changes)
-            winsound.Beep(2500, 100)
+            #winsound.Beep(2500, 100)
     else:
         print("Old file doesn't exist, so skipping comparison.")
 
@@ -135,12 +159,15 @@ def get_filename_json_root(filename_root="data"):
     return (get_filename_root(filename_root) + ".json")
 
 if __name__ == "__main__":
-    dir_name = sys.argv[1]
-    json_name = sys.argv[2]
-    while True:
-        main(dir_name, json_name)  # (sys.argv[1], sys.argv[2])
-        for remaining in range(600, 0, -1):
-            sys.stdout.write("\r")
-            sys.stdout.write("{:2d} seconds remaining.".format(remaining))
-            sys.stdout.flush()
-            time.sleep(1)
+    dir_name = args.path
+    json_name = args.output
+    if args.watch:
+        while True:
+            main(dir_name, json_name)
+            for remaining in range(600, 0, -1):
+                sys.stdout.write("\r")
+                sys.stdout.write("{:2d} seconds remaining.".format(remaining))
+                sys.stdout.flush()
+                time.sleep(1)
+    else:
+        main(dir_name, json_name)
