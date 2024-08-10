@@ -101,6 +101,7 @@ MD5 checksums saved to junk/junk.json
 ## TODOs
 
 - [ ] Generate sample timings
+- [ ] Implement diff calculation with sqlite database
 - [ ] Optimize sqlite updates (e.g. batch/chunk if > some large threshold)
 
 ## Other Similar or Related Projects
