@@ -142,7 +142,7 @@ def main(directory, json_file):
                 json.dump(changes, f)
             with open(json_base + "-diff.json", "w") as f:
                 json.dump(changes, f)
-            pprint.pp(changes)
+            pprint.pprint(changes)
             #winsound.Beep(2500, 100)
     else:
         print("Old file doesn't exist, so skipping comparison.")
