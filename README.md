@@ -89,9 +89,10 @@ MD5 checksums saved to junk/junk.json
 
 ## TODOs
 
-- Implement alternative (optional) sqlite storage
+- [ ] Generate sample timings
+- [ ] Implement alternative (optional) sqlite storage
 
 ## Other Similar or Related Projects
 
-- [fingerprinter-rs](https://github.com/balain/fingerprinter-rs): Rust port (fewer features but much (!) faster).
+- [fingerprinter-rs](https://github.com/balain/fingerprinter-rs): Rust port (uses sha256; fewer features but much (!) faster).
 - [fingerprinter](https://github.com/balain/fingerprinter): Original Typescript version. No longer maintained.
