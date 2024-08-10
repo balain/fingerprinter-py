@@ -9,3 +9,4 @@ bin/
 /pyvenv.cfg
 .DS_Store
 fingerprinter-threaded.py
+*.db

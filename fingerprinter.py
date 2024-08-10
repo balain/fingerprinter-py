@@ -12,25 +12,42 @@ import platform
 
 import argparse
 
-EXCLUDE_LIST_DEFAULT = ['.git', '.venv', '.idea', 'bin', 'Include', 'include', 'Lib', 'lib', 'Scripts', 'scripts', 'out.json']
+EXCLUDE_LIST_DEFAULT = ['.git', '.venv', '.idea', 'bin', 'Include', 'include', 'Lib', 'lib', 'Scripts', 'scripts', 'output.json']
 
 # Parse command line arguments
 parser = argparse.ArgumentParser()
-parser.add_argument("-p", "--path", default=".", help='Path to scan (default: "%(default)s")', required=True)
-parser.add_argument("-o", "--output", default="output.json", help='Output json file (default: "%(default)s")')
-parser.add_argument("-d", "--data-dir", default=".fingerprint-data", help='Data directory (where the json file is saved; default: "%(default)s")')
+parser.add_argument("-p", "--path", help='Path to scan (default: "%(default)s")', default=".", required=True)
+parser.add_argument("-o", "--output", help='Output json file (not including extension; default: "%(default)s")', default="output" )
+parser.add_argument("-d", "--data-dir", help='Data directory (where the json file is saved; default: "%(default)s")', default=".fingerprint-data")
+parser.add_argument("-t", "--timing", help='Capture execution time', action='store_false', default=False)
 parser.add_argument("-x", "--exclude", help='Folders to exclude (default: %(default)s)', action='append', default=EXCLUDE_LIST_DEFAULT)
-parser.add_argument("-w", "--watch", action='store_false', default=False, help="Watch for changes and update output json")
-parser.add_argument("-t", "--watch-period", default=600, help='How many seconds to wait between scans (default %(default)i)', type=int)
-parser.add_argument("-v", "--verbose", action='store_true', default=False, help="Verbose output")
+parser.add_argument("-w", "--watch", help="Watch for changes and update output json", action='store_false', default=False)
+parser.add_argument("-wp", "--watch-period", default=600, help='How many seconds to wait between scans (default %(default)i)', type=int)
+parser.add_argument("-s", "--sqlite-filename", help="Filename to save output to sqlite database (default: unset)")
+parser.add_argument("-v", "--verbose", help="Verbose output",action='store_true', default=False)
 
 args = parser.parse_args()
 
+# Set up timing, if requested
+if args.timing:
+    import time
+    start_time = time.time()
+
+# Set up exclude list
 EXCLUDE_LIST = args.exclude
 
-# print(f"args: {args}")
-# print("git" in args.exclude)
-# exit(100)
+# Set up database, if selected
+if args.sqlite_filename:
+    print(f"Saving output to sqlite database: {args.sqlite_filename}")
+    import sqlite3
+    connection = sqlite3.connect(args.sqlite_filename)
+    cursor = connection.cursor()
+    cursor.execute("CREATE TABLE IF NOT EXISTS fingerprints (path text, md5 text, created text)")
+    cursor.execute("DELETE FROM fingerprints")
+    connection.commit()
+    dbdata = []
+
+# sys.exit(10)
 
 # Set up console colors
 if platform.system() == 'Windows':
@@ -106,10 +123,21 @@ def read_md5_from_json(filename):
         print(f"Couldn't find {filename}... ignoring")
     return old_dict
 
-def save_md5_to_json(md5_dict, json_file="out"):
+def save_md5_to_json(md5_dict, json_file):
     """Save the MD5 dictionary to a JSON file."""
     with open(json_file, 'w') as f:
         json.dump(md5_dict, f, indent=4)
+
+def save_md5_to_sqlite(md5_dict, connection, cursor):
+    """Save the MD5 dictionary to a SQLite database."""
+    save_timestamp = md5_dict['meta']['updated_on']['b']
+    pprint.pprint(dbdata)
+    for f in md5_dict['files']:
+        dbdata.append((f, md5_dict['files'][f], save_timestamp))
+
+    pprint.pprint(dbdata)
+    cursor.executemany("INSERT INTO fingerprints (path, md5, created) VALUES (?, ?, ?)", dbdata)
+    connection.commit()
 
 def exclude_dir(directory, root):
     # print(f"exclude_dir({directory}, {root}) ...")
@@ -147,8 +175,13 @@ def main(directory, json_file):
     else:
         print("Old file doesn't exist, so skipping comparison.")
 
-    # Save full data to base JSON file - whether there were changes or not
-    save_md5_to_json(md5_dict, get_filename_root(json_file) + ".json")
+    if args.sqlite_filename:
+        # connection = sqlite3.connect(args.sqlite_filename)
+        # cursor = connection.cursor()
+        save_md5_to_sqlite(md5_dict, connection, cursor)
+    else:
+        # Save full data to base JSON file - whether there were changes or not
+        save_md5_to_json(md5_dict, get_filename_root(json_file) + ".json")
 
 def get_filename_root(filename_root="data"):
     global DATA_DIR
@@ -164,10 +197,13 @@ if __name__ == "__main__":
     if args.watch:
         while True:
             main(dir_name, json_name)
-            for remaining in range(600, 0, -1):
+            for remaining in range(args.watch_period, 0, -1):
                 sys.stdout.write("\r")
                 sys.stdout.write("{:2d} seconds remaining.".format(remaining))
                 sys.stdout.flush()
                 time.sleep(1)
     else:
         main(dir_name, json_name)
+        # Print execution time, if requested
+        if args.timing:
+            print('Execution time: ', time.time() - start_time, ' seconds')
