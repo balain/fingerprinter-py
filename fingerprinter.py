@@ -131,11 +131,10 @@ def save_md5_to_json(md5_dict, json_file):
 def save_md5_to_sqlite(md5_dict, connection, cursor):
     """Save the MD5 dictionary to a SQLite database."""
     save_timestamp = md5_dict['meta']['updated_on']['b']
-    pprint.pprint(dbdata)
+
     for f in md5_dict['files']:
         dbdata.append((f, md5_dict['files'][f], save_timestamp))
 
-    pprint.pprint(dbdata)
     cursor.executemany("INSERT INTO fingerprints (path, md5, created) VALUES (?, ?, ?)", dbdata)
     connection.commit()
 
@@ -153,33 +152,33 @@ def main(directory, json_file):
     # json_file = input("Enter the output JSON file path: ")
     json_filename = get_filename_json_root(json_file)
     md5_dict = get_files_md5(directory)
-    print(green(f"MD5 checksums saved to {json_filename}"))
-    if os.path.isfile(json_filename):
-        old_dict = read_md5_from_json(json_filename)
-        changes = compare_data(old_dict, md5_dict)
-        changes['meta'] = {}
-        changes['meta']['old'] = old_dict['meta']['updated_on']['a']
-        changes['meta']['new'] = md5_dict['meta']['updated_on']['a']
-        json_base = get_filename_root(json_file + "-" + str(md5_dict['meta']['updated_on']['b']))
-        # No changes
-        if (len(changes['new']) + len(changes['deleted']) + len(changes['changed']) == 0):
-            print('No changes')
-        else:  # Capture the changes
-            # Save diffs to snapshot and "-latest" JSON files
-            with open(get_filename_root(json_file + "-latest-diff.json"), 'w') as f:
-                json.dump(changes, f)
-            with open(json_base + "-diff.json", "w") as f:
-                json.dump(changes, f)
-            pprint.pprint(changes)
-            #winsound.Beep(2500, 100)
-    else:
-        print("Old file doesn't exist, so skipping comparison.")
 
     if args.sqlite_filename:
-        # connection = sqlite3.connect(args.sqlite_filename)
-        # cursor = connection.cursor()
+        print(green(f"Saving to SQLite database: {args.sqlite_filename}"))
         save_md5_to_sqlite(md5_dict, connection, cursor)
     else:
+        print(green(f"MD5 checksums saved to {json_filename}"))
+        if os.path.isfile(json_filename):
+            old_dict = read_md5_from_json(json_filename)
+            changes = compare_data(old_dict, md5_dict)
+            changes['meta'] = {}
+            changes['meta']['old'] = old_dict['meta']['updated_on']['a']
+            changes['meta']['new'] = md5_dict['meta']['updated_on']['a']
+            json_base = get_filename_root(json_file + "-" + str(md5_dict['meta']['updated_on']['b']))
+            # No changes
+            if (len(changes['new']) + len(changes['deleted']) + len(changes['changed']) == 0):
+                print('No changes')
+            else:  # Capture the changes
+                # Save diffs to snapshot and "-latest" JSON files
+                with open(get_filename_root(json_file + "-latest-diff.json"), 'w') as f:
+                    json.dump(changes, f)
+                with open(json_base + "-diff.json", "w") as f:
+                    json.dump(changes, f)
+                # pprint.pprint(changes)
+                # winsound.Beep(2500, 100)
+        else:
+            print("Old file doesn't exist, so skipping comparison.")
+
         # Save full data to base JSON file - whether there were changes or not
         save_md5_to_json(md5_dict, get_filename_root(json_file) + ".json")
 
@@ -206,4 +205,4 @@ if __name__ == "__main__":
         main(dir_name, json_name)
         # Print execution time, if requested
         if args.timing:
-            print('Execution time: ', time.time() - start_time, ' seconds')
+            print(yellow('Execution time: ', time.time() - start_time, ' seconds'))

@@ -95,6 +95,7 @@ MD5 checksums saved to junk/junk.json
 ## TODOs
 
 - [ ] Generate sample timings
+- [ ] Optimize sqlite updates (e.g. batch/chunk if > some large threshold)
 
 ## Other Similar or Related Projects
 
