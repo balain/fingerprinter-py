@@ -12,21 +12,32 @@ import platform
 
 import argparse
 
-EXCLUDE_LIST_DEFAULT = ['.git', '.venv', '.idea', 'bin', 'Include', 'include', 'Lib', 'lib', 'Scripts', 'scripts', 'output.json']
+EXCLUDE_LIST_DEFAULT = ['.git', '.venv', '.idea', 'bin', 'Include', 'include', 'Lib', 'lib', 'Scripts', 'scripts',
+                        'output.json']
+
+INSUFFICIENT_PARAMS = "Invalid options: Requires either a path or a URL."
 
 # Parse command line arguments
 parser = argparse.ArgumentParser()
-parser.add_argument("-p", "--path", help='Path to scan (default: "%(default)s")', default=".", required=True)
-parser.add_argument("-o", "--output", help='Output json file (not including extension; default: "%(default)s")', default="output" )
-parser.add_argument("-d", "--data-dir", help='Data directory (where the json file is saved; default: "%(default)s")', default=".fingerprint-data")
+parser.add_argument("-p", "--path", help='Path to scan (default: "%(default)s")', required=False)
+
+parser.add_argument("-o", "--output", help='Output json file (not including extension; default: "%(default)s")', default="output")
+
+parser.add_argument("-d", "--data-dir", help='Data directory (where the json file is saved; default: "%(default)s")',default=".fingerprint-data")
 parser.add_argument("-t", "--timing", help='Capture execution time', action='store_true', default=False)
 parser.add_argument("-x", "--exclude", help='Folders to exclude (default: %(default)s)', action='append', default=EXCLUDE_LIST_DEFAULT)
-parser.add_argument("-w", "--watch", help="Watch for changes and update output json", action='store_false', default=False)
+parser.add_argument("-u", "--url", help='URL(s) to fetch', action='append', default=[])
+parser.add_argument("-w", "--watch", help="Watch for changes and update output json", action='store_true', default=False)
 parser.add_argument("-wp", "--watch-period", default=600, help='How many seconds to wait between scans (default %(default)i)', type=int)
 parser.add_argument("-s", "--sqlite-filename", help="Filename to save output to sqlite database (default: unset)")
-parser.add_argument("-v", "--verbose", help="Verbose output",action='store_true', default=False)
+parser.add_argument("-v", "--verbose", help="Verbose output", action='store_true', default=False)
 
 args = parser.parse_args()
+
+# Ensure either URL or Path are provided
+if not args.path and not args.url:
+    print(red(INSUFFICIENT_PARAMS))
+    sys.exit(101)
 
 # Set up timing, if requested
 if args.timing:
@@ -152,40 +163,93 @@ def exclude_dir(directory, root):
 
 def main(directory, json_file):
     global DATA_DIR
-    # directory = input("Enter the directory path to calculate MD5 sums: ")
-    # json_file = input("Enter the output JSON file path: ")
-    json_filename = get_filename_json_root(json_file)
-    md5_dict = get_files_md5(directory)
-
-    if args.sqlite_filename:
-        print(green(f"Saving to SQLite database: {args.sqlite_filename}"))
-        save_md5_to_sqlite(md5_dict, connection, cursor)
-    else:
-        print(green(f"MD5 checksums saved to {json_filename}"))
-        if os.path.isfile(json_filename):
-            old_dict = read_md5_from_json(json_filename)
-            changes = compare_data(old_dict, md5_dict)
-            changes['meta'] = {}
-            changes['meta']['old'] = old_dict['meta']['updated_on']['a']
-            changes['meta']['new'] = md5_dict['meta']['updated_on']['a']
-            json_base = get_filename_root(json_file + "-" + str(md5_dict['meta']['updated_on']['b']))
-            # No changes
-            if (len(changes['new']) + len(changes['deleted']) + len(changes['changed']) == 0):
-                print('No changes')
-            else:  # Capture the changes
-                # Save diffs to snapshot and "-latest" JSON files
-                with open(get_filename_root(json_file + "-latest-diff.json"), 'w') as f:
-                    json.dump(changes, f)
-                with open(json_base + "-diff.json", "w") as f:
-                    json.dump(changes, f)
-                # pprint.pprint(changes)
-                # winsound.Beep(2500, 100)
+    # Directory or website?
+    if args.url:  # Website
+        key = args.url[0]
+        md5_dict = {}
+        response = {}
+        # Pull the web content
+        import requests
+        hasher = hashlib.md5()
+        # TODO: Handle multiple URLs
+        try:
+            webresponse = requests.get(args.url[0])
+            hasher.update(webresponse.content)
+        except requests.exceptions.RequestException as e:
+            print(red(e))
+            sys.exit(101)
+        md5_dict[args.url[0]] = hasher.hexdigest()
+        now = datetime.now()
+        response['meta'] = {'path': directory, 'updated_on': {'a': now.strftime("%Y-%m-%dT%H:%M:%S"), 'b': int(now.timestamp())}}
+        response['files'] = md5_dict
+        md5_dict = response  # TODO: Fix this hack
+        json_filename = get_filename_json_root(json_file)
+        if args.sqlite_filename:
+            print(green(f"Saving to SQLite database: {args.sqlite_filename}"))
+            save_md5_to_sqlite(md5_dict, connection, cursor)
         else:
-            print("Old file doesn't exist, so skipping comparison.")
+            # TODO: Convert to function (A)
+            print(green(f"MD5 checksums saved to {json_filename}"))
+            if os.path.isfile(json_filename):
+                old_dict = read_md5_from_json(json_filename)
+                changes = compare_data(old_dict, md5_dict)
+                changes['meta'] = {}
+                changes['meta']['old'] = old_dict['meta']['updated_on']['a']
+                changes['meta']['new'] = md5_dict['meta']['updated_on']['a']
+                json_base = get_filename_root(json_file + "-" + str(md5_dict['meta']['updated_on']['b']))
+                # No changes
+                if (len(changes['new']) + len(changes['deleted']) + len(changes['changed']) == 0):
+                    print('No changes')
+                else:  # Capture the changes
+                    # Save diffs to snapshot and "-latest" JSON files
+                    with open(get_filename_root(json_file + "-latest-diff.json"), 'w') as f:
+                        json.dump(changes, f)
+                    with open(json_base + "-diff.json", "w") as f:
+                        json.dump(changes, f)
+                    # pprint.pprint(changes)
+                    # winsound.Beep(2500, 100)
+            else:
+                print("Old file doesn't exist, so skipping comparison.")
+            # Save full data to base JSON file - whether there were changes or not
+            save_md5_to_json(md5_dict, get_filename_root(json_file) + ".json")
+    elif args.path:  # Local file
+        json_filename = get_filename_json_root(json_file)
+        md5_dict = get_files_md5(directory)
 
-        # Save full data to base JSON file - whether there were changes or not
-        save_md5_to_json(md5_dict, get_filename_root(json_file) + ".json")
+        # TODO: Replace this code with a call to function A (B)
+        if args.sqlite_filename:
+            print(green(f"Saving to SQLite database: {args.sqlite_filename}"))
+            save_md5_to_sqlite(md5_dict, connection, cursor)
+        else:
+            # TODO: Convert to function (A)
+            print(green(f"MD5 checksums saved to {json_filename}"))
+            if os.path.isfile(json_filename):
+                old_dict = read_md5_from_json(json_filename)
+                changes = compare_data(old_dict, md5_dict)
+                changes['meta'] = {}
+                changes['meta']['old'] = old_dict['meta']['updated_on']['a']
+                changes['meta']['new'] = md5_dict['meta']['updated_on']['a']
+                json_base = get_filename_root(json_file + "-" + str(md5_dict['meta']['updated_on']['b']))
+                # No changes
+                if (len(changes['new']) + len(changes['deleted']) + len(changes['changed']) == 0):
+                    print('No changes')
+                else:  # Capture the changes
+                    # Save diffs to snapshot and "-latest" JSON files
+                    with open(get_filename_root(json_file + "-latest-diff.json"), 'w') as f:
+                        json.dump(changes, f)
+                    with open(json_base + "-diff.json", "w") as f:
+                        json.dump(changes, f)
+                    # pprint.pprint(changes)
+                    # winsound.Beep(2500, 100)
+            else:
+                print("Old file doesn't exist, so skipping comparison.")
 
+            # Save full data to base JSON file - whether there were changes or not
+            save_md5_to_json(md5_dict, get_filename_root(json_file) + ".json")
+
+    else:
+        print(INSUFFICIENT_PARAMS)
+        sys.exit(101)
 def get_filename_root(filename_root="data"):
     global DATA_DIR
     return (os.path.join(DATA_DIR, filename_root))
