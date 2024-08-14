@@ -1,2 +1,3 @@
 simple_chalk
 winsound
+requests

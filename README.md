@@ -1,6 +1,6 @@
 # Fingerprinter (Python)
 
-Take fingerprints (md5) of files in specified folder, recursively. 
+Take fingerprints (md5) of files in specified folder, recursively or website(s).
 
 Optionally:
 - Compare with previous snapshots and report on any changes (i.e. added, changed, or deleted files).
@@ -27,10 +27,11 @@ The things you need before installing the software:
 
 ### Installation
 
-To run this program:
+Clone the repo and install the required modules:
 
 ```bash
 $ git clone https://github.com/balain/fingerprinter-py.git
+$ pip install -r requirements.txt
 ```
 
 ## Options
@@ -39,24 +40,27 @@ Using argparse
 
 ```bash
 ❯ python fingerprinter.py --help
-usage: fingerprinter.py [-h] -p PATH [-o OUTPUT] [-d DATA_DIR] [-t] [-x EXCLUDE] [-w] [-wp WATCH_PERIOD] [-s SQLITE_FILENAME] [-v]
+usage: fingerprinter.py [-h] [-p PATH] [-o OUTPUT] [-c] [-d DATA_DIR] [-a] [-t] [-x EXCLUDE] [-u URL] [-w] [-wp WATCH_PERIOD] [-s SQLITE_FILENAME] [-v]
 
 options:
   -h, --help            show this help message and exit
-  -p PATH, --path PATH  Path to scan (default: ".")
+  -p PATH, --path PATH  Path to scan (default: "None")
   -o OUTPUT, --output OUTPUT
                         Output json file (not including extension; default: "output")
+  -c, --cache           Cache website snapshot(s)
   -d DATA_DIR, --data-dir DATA_DIR
                         Data directory (where the json file is saved; default: ".fingerprint-data")
+  -a, --audio           Enable audio feedback (beep on change)
   -t, --timing          Capture execution time
   -x EXCLUDE, --exclude EXCLUDE
                         Folders to exclude (default: ['.git', '.venv', '.idea', 'bin', 'Include', 'include', 'Lib', 'lib', 'Scripts', 'scripts', 'output.json'])
+  -u URL, --url URL     URL(s) to fetch
   -w, --watch           Watch for changes and update output json
   -wp WATCH_PERIOD, --watch-period WATCH_PERIOD
                         How many seconds to wait between scans (default 600)
   -s SQLITE_FILENAME, --sqlite-filename SQLITE_FILENAME
                         Filename to save output to sqlite database (default: unset)
-  -v, --verbose         Verbose output```
+  -v, --verbose         Verbose output
 
 ## Usage
 
@@ -72,10 +76,20 @@ $ python fingerprinter.py
 
 ### Using additional parameters
 
+#### Specify output file
+
 Scan the current folder, exclude .git folder(s), output to parent.json in the output-files folder (created if it doesn't already exist):
 
 ```bash
 $ python fingerprinter.py -p .. -x git -o parent.json -d output-files
+```
+
+#### Fingerprint URL(s)
+
+Fetch the URL(s) provided and output to websites.json every 30 seconds:
+
+```bash
+$ python fingerprinter.py -u https://www.ibm.com -u https://www.apple.com -u https://www.ubuntu.com -w -wp 30 -o websites
 ```
 
 ## Sample Output
@@ -97,10 +111,13 @@ MD5 checksums saved to junk/junk.json
 
 ## Implemented
 - [x] Implement alternative (optional) sqlite storage
+- [x] Fingerprint URLs
+- [x] Generate sample timings
+- [x] Cache websites
+- [x] Audio feedback on change
 
 ## TODOs
 
-- [ ] Generate sample timings
 - [ ] Implement diff calculation with sqlite database
 - [ ] Optimize sqlite updates (e.g. batch/chunk if > some large threshold)
 
