@@ -61,6 +61,7 @@ options:
   -s SQLITE_FILENAME, --sqlite-filename SQLITE_FILENAME
                         Filename to save output to sqlite database (default: unset)
   -v, --verbose         Verbose output
+```
 
 ## Usage
 
